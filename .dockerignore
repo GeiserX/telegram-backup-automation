@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+
+# Session files (should be mounted as volume)
+*.session
+*.session-journal
+
+# Database files (should be mounted as volume)
+*.db
+*.db-journal
+
+# Backup data (should be mounted as volume)
+backups/
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+ENV/
+env/
+
+# Documentation
+README.md
+*.md
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
