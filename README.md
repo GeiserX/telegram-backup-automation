@@ -13,6 +13,58 @@ Automated Telegram data backup system with Docker support. Performs incremental 
 📁 **Media Support** - Download photos, videos, documents with size limits  
 🗄️ **SQLite Storage** - Efficient database with full-text search capability
 
+## How It Works
+
+### Incremental Backups (Delta-Based)
+
+The system uses **incremental backups** to minimize storage and bandwidth usage:
+
+**Messages:**
+- Tracks the `last_message_id` for each chat in a SQLite database
+- On subsequent backups, only fetches messages with ID greater than the last saved ID
+- **First backup**: Downloads all message history
+- **Future backups**: Only downloads new messages since last sync
+- **Space efficiency**: After initial backup, incremental backups are typically very small
+
+**Media Files:**
+- Checks if file already exists before downloading (automatic deduplication)
+- Stores each media file once, even if referenced by multiple messages
+- Skips files larger than `MAX_MEDIA_SIZE_MB` (configurable)
+- Organizes media by chat ID for easy browsing
+
+**Example:**
+```
+First backup:   10,000 messages, 2 GB media → Full download
+Second backup:  50 new messages, 10 MB media → Only downloads new data
+Third backup:   30 new messages, 5 MB media  → Only downloads new data
+```
+
+### Point-in-Time Recovery
+
+You can export and recover messages from **any specific date range**:
+
+**Export Capabilities:**
+- Export all messages from a specific time period
+- Export specific chats or all chats
+- Filter by date range (start and end dates)
+- Output to JSON with full message metadata
+- Includes references to downloaded media files
+
+**Use Cases:**
+- Recover accidentally deleted conversations
+- Archive specific time periods for legal/compliance reasons
+- Migrate data to another system
+- Create backups before major Telegram updates
+- Extract data for analysis or reporting
+
+**Important Notes:**
+- ✅ Messages include timestamps, allowing precise date filtering
+- ✅ Media files are preserved and referenced in exports
+- ✅ User and chat metadata included in exports
+- ⚠️ Only the latest version of edited messages is stored (no edit history)
+- ⚠️ Cannot backup messages deleted before your first backup
+- ⚠️ Exports are JSON files, not a restore-to-Telegram feature
+
 ## Prerequisites
 
 ### 1. Telegram API Credentials
