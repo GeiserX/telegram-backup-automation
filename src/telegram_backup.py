@@ -7,7 +7,7 @@ import os
 import logging
 import hashlib
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pathlib import Path
 
 from telethon import TelegramClient
