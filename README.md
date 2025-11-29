@@ -88,12 +88,16 @@ You need to obtain API credentials from Telegram:
 
 1. **Clone or download this repository**
 
-2. **Create environment file**
+2. **Configure environment variables**
+
+   You have two options for setting environment variables:
+
+   **Option A: Using `.env` file (Recommended)**
    ```bash
    cp .env.example .env
    ```
-
-3. **Edit `.env` with your credentials**
+   
+   Then edit `.env` with your credentials:
    ```env
    TELEGRAM_API_ID=your_api_id
    TELEGRAM_API_HASH=your_api_hash
@@ -101,7 +105,23 @@ You need to obtain API credentials from Telegram:
    SCHEDULE=0 */6 * * *
    ```
 
-4. **Run authentication setup** (one-time only)
+   **Option B: Directly in `docker-compose.yml`**
+   
+   You can also set environment variables directly in the `docker-compose.yml` file instead of using `.env`:
+   ```yaml
+   environment:
+     TELEGRAM_API_ID: 12345678
+     TELEGRAM_API_HASH: abcdef1234567890
+     TELEGRAM_PHONE: +1234567890
+     # ... other variables
+   ```
+   
+   > **Note:** Using a `.env` file is recommended because:
+   > - Keeps sensitive data out of version control (`.env` is gitignored)
+   > - Easier to manage multiple configurations
+   > - Cleaner `docker-compose.yml` file
+
+3. **Run authentication setup** (one-time only)
    
    This step is **required** to generate the session file. It runs interactively to ask for your Telegram verification code (and 2FA password if enabled).
 
@@ -121,12 +141,12 @@ You need to obtain API credentials from Telegram:
    docker-compose run --rm telegram-backup python -m src.setup_auth
    ```
 
-5. **Start the backup service**
+4. **Start the backup service**
    ```bash
    docker-compose up -d
    ```
 
-6. **Check logs**
+5. **Check logs**
    ```bash
    docker-compose logs -f
    ```
