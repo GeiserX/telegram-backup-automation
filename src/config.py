@@ -45,7 +45,12 @@ class Config:
         self.log_level = getattr(logging, log_level, logging.INFO)
         
         # Derived paths
-        self.session_path = os.path.join(self.backup_path, f'{self.session_name}.session')
+        # Store session in a separate directory from backups
+        # If BACKUP_PATH is /data/backups, session goes to /data/session
+        backup_parent = os.path.dirname(self.backup_path.rstrip('/\\'))
+        self.session_dir = os.getenv('SESSION_DIR', os.path.join(backup_parent, 'session'))
+        self.session_path = os.path.join(self.session_dir, f'{self.session_name}.session')
+        
         self.database_path = os.path.join(self.backup_path, 'telegram_backup.db')
         self.media_path = os.path.join(self.backup_path, 'media')
         
@@ -105,6 +110,7 @@ class Config:
     def _ensure_directories(self):
         """Create necessary directories if they don't exist."""
         os.makedirs(self.backup_path, exist_ok=True)
+        os.makedirs(self.session_dir, exist_ok=True)
         if self.download_media:
             os.makedirs(self.media_path, exist_ok=True)
     

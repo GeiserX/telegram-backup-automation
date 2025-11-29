@@ -5,15 +5,16 @@ services:
     restart: unless-stopped
 
     environment:
-      # Required: Get from https://my.telegram.org/apps
+      # Authentication & Connection
       TELEGRAM_API_ID: ${TELEGRAM_API_ID}
       TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
       TELEGRAM_PHONE: ${TELEGRAM_PHONE}
+      SESSION_NAME: ${SESSION_NAME:-telegram_backup}
 
       # Schedule (cron format)
       SCHEDULE: ${SCHEDULE:-0 */6 * * *}
 
-      # Backup options
+      # Backup Configuration
       BACKUP_PATH: /data/backups
       DOWNLOAD_MEDIA: ${DOWNLOAD_MEDIA:-true}
       MAX_MEDIA_SIZE_MB: ${MAX_MEDIA_SIZE_MB:-100}
@@ -21,7 +22,6 @@ services:
 
       # Logging
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      SESSION_NAME: ${SESSION_NAME:-telegram_backup}
 
     volumes:
       # Persistent data storage

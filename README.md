@@ -231,15 +231,16 @@ python -m src.telegram_backup
 
 ```
 data/
-├── backups/
-│   ├── telegram_backup.session      # Authentication session
-│   ├── telegram_backup.db           # SQLite database
-│   └── media/                       # Downloaded media files
-│       ├── 123456/                  # Chat ID
-│       │   ├── 20240101_120000_1.jpg
-│       │   └── 20240101_120100_2.mp4
-│       └── 789012/
-│           └── ...
+├── session/
+│   └── telegram_backup.session      # Authentication session (stored separately)
+└── backups/
+    ├── telegram_backup.db           # SQLite database
+    └── media/                       # Downloaded media files
+        ├── 123456/                  # Chat ID
+        │   ├── 20240101_120000_1.jpg
+        │   └── 20240101_120100_2.mp4
+        └── 789012/
+            └── ...
 ```
 
 ### Database Schema
