@@ -40,6 +40,9 @@ services:
     volumes:
       # Persistent data storage
       - ./data:/data
+      - ./src:/app/src
+    networks:
+      - telegram-network
     # Optional: Resource limits
     # deploy:
     #   resources:
@@ -49,3 +52,23 @@ services:
     #     reservations:
     #       cpus: '0.5'
     #       memory: 512M
+
+  telegram-viewer:
+    build: .
+    container_name: telegram-viewer
+    command: uvicorn src.web.main:app --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      BACKUP_PATH: /data/backups
+      SESSION_DIR: /data/session
+    volumes:
+      - ./data:/data
+      - ./src:/app/src
+    networks:
+      - telegram-network
+
+networks:
+  telegram-network:
+    driver: bridge

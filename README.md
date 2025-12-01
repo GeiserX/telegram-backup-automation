@@ -198,6 +198,24 @@ If you don't want to clone the repository and just want to run the container:
      drumsergio/telegram-backup-automation:latest
    ```
 
+## Web Viewer (New in v0.2.0)
+
+You can browse your backed-up chats and media using the built-in Web Viewer.
+
+### Using Docker Compose
+The viewer is included as a separate service in `docker-compose.yml`.
+1.  Ensure `telegram-viewer` service is uncommented/present in your `docker-compose.yml`.
+2.  Run `docker-compose up -d`.
+3.  Open **http://localhost:8000** in your browser.
+
+### Features
+*   **Telegram-like UI**: Dark mode, responsive design.
+*   **Browse History**: Read all backed-up messages.
+*   **Media Support**: View photos and play videos directly in the browser.
+*   **Search**: Filter chats by name.
+
+> **Note**: The viewer is read-only and runs in a separate container for safety. It reads from the same SQLite database and media folder.
+
 ## Configuration
 
 All configuration is done via environment variables in the `.env` file:
