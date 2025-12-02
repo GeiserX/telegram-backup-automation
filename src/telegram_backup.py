@@ -284,6 +284,13 @@ class TelegramBackup:
         # Generate unique media ID
         media_id = f"{chat_id}_{message.id}_{media_type}"
         
+        # Get Telegram's file unique ID for deduplication
+        telegram_file_id = None
+        if hasattr(media, 'photo'):
+            telegram_file_id = str(getattr(media.photo, 'id', None))
+        elif hasattr(media, 'document'):
+            telegram_file_id = str(getattr(media.document, 'id', None))
+        
         # Check file size
         file_size = getattr(media, 'size', 0) or 0
         max_size = self.config.get_max_media_size_bytes()
