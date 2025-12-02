@@ -40,7 +40,6 @@ services:
     volumes:
       # Persistent data storage
       - ./data:/data
-      - ./src:/app/src
     networks:
       - telegram-network
     # Optional: Resource limits
@@ -62,10 +61,8 @@ services:
       - "8000:8000"
     environment:
       BACKUP_PATH: /data/backups
-      SESSION_DIR: /data/session
     volumes:
       - ./data:/data
-      - ./src:/app/src
     networks:
       - telegram-network
 
