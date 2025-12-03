@@ -50,7 +50,7 @@ else:
     logger.info("Viewer authentication is DISABLED (no VIEWER_USERNAME / VIEWER_PASSWORD set)")
 
 
-def require_auth(auth_cookie: str | None = Cookie(default=None)):
+def require_auth(auth_cookie: str | None = Cookie(default=None, alias=AUTH_COOKIE_NAME)):
     """Dependency that enforces cookie-based viewer auth when enabled."""
     if not AUTH_ENABLED:
         return
@@ -71,7 +71,7 @@ async def read_root():
     return FileResponse(templates_dir / "index.html")
 
 @app.get("/api/auth/status")
-def auth_status(auth_cookie: str | None = Cookie(default=None)):
+def auth_status(auth_cookie: str | None = Cookie(default=None, alias=AUTH_COOKIE_NAME)):
     """
     Return whether auth is required and if the current client is authenticated.
     Used by the frontend to decide whether to show the login form.
