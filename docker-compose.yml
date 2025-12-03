@@ -61,6 +61,10 @@ services:
       - "8000:8000"
     environment:
       BACKUP_PATH: /data/backups
+      # Optional basic auth for the viewer (recommended)
+      # When both are set, the UI will prompt for credentials
+      VIEWER_USERNAME: ${VIEWER_USERNAME:-}
+      VIEWER_PASSWORD: ${VIEWER_PASSWORD:-}
     volumes:
       - ./data:/data
     networks:
