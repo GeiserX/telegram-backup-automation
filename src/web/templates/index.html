@@ -37,18 +37,7 @@
             max-width: 65%;
             position: relative;
             word-wrap: break-word;
-        }
-
-        .message-own {
-            background-color: #2b5278;
-            margin-left: auto;
-            border-radius: 12px 12px 0 12px;
-        }
-
-        .message-other {
-            background-color: #182533;
-            margin-right: auto;
-            border-radius: 12px 12px 12px 0;
+            border-radius: 12px;
         }
 
         /* Date Separator */
@@ -101,8 +90,39 @@
 <body class="bg-tg-bg text-tg-text h-screen overflow-hidden flex">
     <div id="app" class="flex w-full h-full">
 
+        <!-- Auth Gate + App -->
+        <div v-if="!isAuthenticated" class="w-full h-full flex items-center justify-center bg-tg-bg">
+            <div class="bg-tg-sidebar rounded-xl shadow-xl p-8 w-full max-w-sm border border-gray-700">
+                <h1 class="text-2xl font-bold mb-6 text-center">Telegram Archive</h1>
+                <p class="text-sm text-tg-muted mb-4 text-center" v-if="authRequired">
+                    Please sign in to view your backup.
+                </p>
+                <p class="text-sm text-tg-muted mb-4 text-center" v-else>
+                    Authentication is currently disabled.
+                </p>
+
+                <form @submit.prevent="performLogin" class="space-y-4" v-if="authRequired">
+                    <div>
+                        <label class="block text-sm mb-1 text-tg-muted">Username</label>
+                        <input v-model="loginForm.username" type="text" autocomplete="username"
+                            class="w-full bg-gray-900 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1 text-tg-muted">Password</label>
+                        <input v-model="loginForm.password" type="password" autocomplete="current-password"
+                            class="w-full bg-gray-900 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <p v-if="loginError" class="text-xs text-red-400">{{ loginError }}</p>
+                    <button type="submit" :disabled="loadingAuth"
+                        class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg py-2 font-medium transition">
+                        {{ loadingAuth ? 'Signing in...' : 'Sign in' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+
         <!-- Sidebar -->
-        <div class="w-1/4 min-w-[300px] bg-tg-sidebar flex flex-col border-r border-gray-700">
+        <div v-else class="w-1/4 min-w-[300px] bg-tg-sidebar flex flex-col border-r border-gray-700">
             <!-- Header -->
             <div class="p-4 border-b border-gray-700">
                 <h1 class="text-xl font-bold mb-4">Telegram Archive</h1>
@@ -124,8 +144,19 @@
                     :class="{'bg-tg-active': selectedChat?.id === chat.id}">
                     <!-- Avatar -->
                     <div
-                        class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-lg font-bold text-white shrink-0">
-                        {{ getInitials(chat) }}
+                        class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-lg font-bold text-white shrink-0 overflow-hidden">
+                        <template v-if="isDeletedChat(chat)">
+                            <!-- Deleted account icon -->
+                            <svg class="w-7 h-7 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 14c2.21 0 4-1.343 4-3s-1.79-3-4-3-4 1.343-4 3 1.79 3 4 3z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 21a7 7 0 0114 0" />
+                            </svg>
+                        </template>
+                        <template v-else>
+                            {{ getInitials(chat) }}
+                        </template>
                     </div>
 
                     <div class="flex-1 min-w-0">
@@ -165,8 +196,19 @@
                     class="p-4 bg-tg-sidebar border-b border-gray-700 flex items-center justify-between shadow-md z-10">
                     <div class="flex items-center gap-4">
                         <div
-                            class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white">
-                            {{ getInitials(selectedChat) }}
+                            class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white overflow-hidden">
+                            <template v-if="isDeletedChat(selectedChat)">
+                                <svg class="w-6 h-6 opacity-80" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 14c2.21 0 4-1.343 4-3s-1.79-3-4-3-4 1.343-4 3 1.79 3 4 3z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 21a7 7 0 0114 0" />
+                                </svg>
+                            </template>
+                            <template v-else>
+                                {{ getInitials(selectedChat) }}
+                            </template>
                         </div>
                         <div>
                             <h2 class="font-bold text-lg">{{ getChatName(selectedChat) }}</h2>
@@ -201,8 +243,8 @@
 
                         <!-- Message -->
                         <div class="flex" :class="isOwnMessage(msg) ? 'justify-end' : 'justify-start'">
-                            <div class="message-bubble p-3 text-sm shadow-sm"
-                                :class="isOwnMessage(msg) ? 'message-own text-white' : 'message-other text-gray-200'">
+                            <div class="message-bubble p-3 text-sm shadow-sm text-gray-100"
+                                :style="getSenderStyle(msg)">
                                 <!-- Sender Name (if group and first in sequence) -->
                                 <div v-if="!isOwnMessage(msg) && isGroup && showSenderName(index)"
                                     class="text-xs font-bold text-blue-400 mb-1">
@@ -302,16 +344,78 @@
                 const hasMore = ref(true)
                 const messagesContainer = ref(null)
                 const scrollAnchor = ref(null)
+                const isAuthenticated = ref(false)
+                const authRequired = ref(false)
+                const loadingAuth = ref(true)
+                const loginForm = ref({ username: '', password: '' })
+                const loginError = ref('')
 
-                // Fetch chats on mount
-                onMounted(async () => {
+                const loadChats = async () => {
                     try {
                         const res = await fetch('/api/chats')
+                        if (!res.ok) {
+                            throw new Error('Failed to fetch chats')
+                        }
                         chats.value = await res.json()
                     } catch (e) {
                         console.error("Failed to fetch chats", e)
                     }
+                }
+
+                // Auth check on mount
+                onMounted(async () => {
+                    try {
+                        const res = await fetch('/api/auth/status')
+                        if (res.ok) {
+                            const data = await res.json()
+                            authRequired.value = !!data.auth_required
+                            isAuthenticated.value = !!data.authenticated
+
+                            if (isAuthenticated.value) {
+                                await loadChats()
+                            }
+                        } else {
+                            console.error('Failed to get auth status')
+                        }
+                    } catch (e) {
+                        console.error('Auth status error', e)
+                    } finally {
+                        loadingAuth.value = false
+                    }
                 })
+
+                const performLogin = async () => {
+                    loginError.value = ''
+                    loadingAuth.value = true
+                    try {
+                        const res = await fetch('/api/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(loginForm.value),
+                        })
+
+                        if (!res.ok) {
+                            if (res.status === 401) {
+                                loginError.value = 'Invalid username or password'
+                                return
+                            }
+                            throw new Error('Login failed')
+                        }
+
+                        const data = await res.json()
+                        if (data.success) {
+                            isAuthenticated.value = true
+                            await loadChats()
+                        } else {
+                            loginError.value = 'Login failed'
+                        }
+                    } catch (e) {
+                        console.error('Login error', e)
+                        loginError.value = 'Unexpected error, please try again'
+                    } finally {
+                        loadingAuth.value = false
+                    }
+                }
 
                 const filteredChats = computed(() => {
                     if (!searchQuery.value) return chats.value
@@ -418,6 +522,12 @@
                     return 'Deleted Account'
                 }
 
+                const isDeletedChat = (chat) => {
+                    if (!chat) return false
+                    const name = getChatName(chat)
+                    return name === 'Deleted Account'
+                }
+
                 const showSenderName = (index) => {
                     if (index === 0) return true
                     const prevMsg = sortedMessages.value[index - 1]
@@ -443,6 +553,20 @@
                 const getInitials = (chat) => {
                     const name = getChatName(chat)
                     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                }
+
+                const getSenderColor = (msg) => {
+                    // Use sender_id when available, otherwise fall back to chat_id
+                    const id = msg.sender_id ?? msg.chat_id ?? 0
+                    const base = Math.abs(id) || 1
+                    const hue = (base * 47) % 360
+                    return `hsla(${hue}, 45%, 22%, 0.95)`
+                }
+
+                const getSenderStyle = (msg) => {
+                    return {
+                        backgroundColor: getSenderColor(msg),
+                    }
                 }
 
                 const formatDate = (dateStr) => {
@@ -564,7 +688,17 @@
                     scrollToMessage,
                     messagesContainer,
                     scrollAnchor,
-                    handleScroll
+                    handleScroll,
+                    // Auth
+                    isAuthenticated,
+                    authRequired,
+                    loadingAuth,
+                    loginForm,
+                    loginError,
+                    performLogin,
+                    // Colors / avatars
+                    getSenderStyle,
+                    isDeletedChat,
                 }
             }
         }).mount('#app')

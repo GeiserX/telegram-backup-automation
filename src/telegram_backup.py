@@ -81,35 +81,61 @@ class TelegramBackup:
             # Get all dialogs (chats)
             dialogs = await self._get_dialogs()
             logger.info(f"Found {len(dialogs)} total dialogs")
-            
+
             # Filter dialogs based on chat type and ID filters
             filtered_dialogs = []
             for dialog in dialogs:
                 entity = dialog.entity
                 chat_id = entity.id
-                
+
                 is_user = isinstance(entity, User) and not entity.bot
                 is_group = isinstance(entity, Chat) or (
                     isinstance(entity, Channel) and entity.megagroup
                 )
                 is_channel = isinstance(entity, Channel) and not entity.megagroup
-                
+
                 if self.config.should_backup_chat(chat_id, is_user, is_group, is_channel):
                     filtered_dialogs.append(dialog)
-            
+
             logger.info(f"Backing up {len(filtered_dialogs)} dialogs after filtering")
-            
+
+            if not filtered_dialogs:
+                logger.info("No dialogs to back up after filtering")
+                return
+
+            # Ensure we start from the most recently active chats
+            filtered_dialogs.sort(
+                key=lambda d: getattr(d, "date", None) or datetime.min,
+                reverse=True,
+            )
+
+            # Detect whether we've already completed at least one full backup run
+            # (i.e. some chats have a non-zero last_message_id recorded)
+            has_synced_before = any(
+                self.db.get_last_message_id(dialog.entity.id) > 0
+                for dialog in filtered_dialogs
+            )
+
             # Backup each dialog
             total_messages = 0
             for i, dialog in enumerate(filtered_dialogs, 1):
                 entity = dialog.entity
                 chat_name = self._get_chat_name(entity)
                 logger.info(f"[{i}/{len(filtered_dialogs)}] Backing up: {chat_name}")
-                
+
                 try:
                     message_count = await self._backup_dialog(dialog)
                     total_messages += message_count
                     logger.info(f"  → Backed up {message_count} new messages")
+
+                    # Optimization: after initial full run, if the most recently
+                    # active chat has no new messages, we assume the rest don't either.
+                    if has_synced_before and i == 1 and message_count == 0:
+                        logger.info(
+                            "Most recent chat has no new messages; "
+                            "skipping remaining chats for this run."
+                        )
+                        break
                 except Exception as e:
                     logger.error(f"  → Error backing up {chat_name}: {e}", exc_info=True)
             
@@ -154,10 +180,18 @@ class TelegramBackup:
         """
         entity = dialog.entity
         chat_id = entity.id
-        
+
         # Save chat information
         chat_data = self._extract_chat_data(entity)
         self.db.upsert_chat(chat_data)
+
+        # Ensure profile photos for users and groups/channels are backed up.
+        # This runs on every dialog backup but only downloads new files when
+        # Telegram reports a different profile photo.
+        try:
+            await self._ensure_profile_photo(entity)
+        except Exception as e:
+            logger.error(f"Error downloading profile photo for {chat_id}: {e}", exc_info=True)
         
         # Get last synced message ID for incremental backup
         last_message_id = self.db.get_last_message_id(chat_id)
@@ -272,6 +306,41 @@ class TelegramBackup:
         
         # Return message data for batch processing
         return message_data
+
+    async def _ensure_profile_photo(self, entity) -> None:
+        """
+        Download and keep a copy of the profile photo for users and chats.
+
+        We only ever add new files when Telegram reports a different photo,
+        and we never delete older ones. This way, if a user removes their
+        photo later, we still keep at least one historical copy.
+        """
+        # Some entities (e.g. Deleted Account) may not have a photo attribute
+        photo = getattr(entity, "photo", None)
+        if not photo:
+            return
+
+        # Determine target directory based on entity type
+        if isinstance(entity, User):
+            base_dir = os.path.join(self.config.media_path, "avatars", "users")
+        else:
+            # Covers Chat and Channel (groups, supergroups, channels)
+            base_dir = os.path.join(self.config.media_path, "avatars", "chats")
+
+        os.makedirs(base_dir, exist_ok=True)
+
+        # Use Telegram's internal photo id to derive a stable filename so
+        # a new photo results in a new file, while old ones are kept.
+        photo_id = getattr(photo, "photo_id", None) or getattr(photo, "id", None)
+        suffix = str(photo_id) if photo_id is not None else "current"
+        file_name = f"{entity.id}_{suffix}.jpg"
+        file_path = os.path.join(base_dir, file_name)
+
+        # If we've already downloaded this exact photo, skip
+        if os.path.exists(file_path):
+            return
+
+        await self.client.download_profile_photo(entity, file_path)
     
     async def _process_media(self, message: Message, chat_id: int) -> Optional[dict]:
         """

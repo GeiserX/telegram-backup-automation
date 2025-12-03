@@ -239,6 +239,8 @@ All configuration is done via environment variables in the `.env` file:
 | `CHAT_TYPES` | `private,groups,channels` | Chat types to backup |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `SESSION_NAME` | `telegram_backup` | Session file name |
+| `VIEWER_USERNAME` | _empty_ | If set together with `VIEWER_PASSWORD`, enables basic auth for the web viewer |
+| `VIEWER_PASSWORD` | _empty_ | Password for the web viewer when auth is enabled |
 
 ### Schedule Format
 

@@ -1,11 +1,12 @@
-from fastapi import FastAPI, Request, HTTPException, Query
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI, Request, HTTPException, Query, Depends, Cookie
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
 from typing import Optional, List
 from pathlib import Path
+import hashlib
 
 from ..config import Config
 from ..database import Database
@@ -32,6 +33,30 @@ app.add_middleware(
 config = Config()
 db = Database(config.database_path)
 
+# Simple viewer authentication using env vars
+VIEWER_USERNAME = os.getenv("VIEWER_USERNAME")
+VIEWER_PASSWORD = os.getenv("VIEWER_PASSWORD")
+AUTH_ENABLED = bool(VIEWER_USERNAME and VIEWER_PASSWORD)
+AUTH_COOKIE_NAME = "viewer_auth"
+AUTH_TOKEN = None
+
+if AUTH_ENABLED:
+    AUTH_TOKEN = hashlib.sha256(
+        f"{VIEWER_USERNAME}:{VIEWER_PASSWORD}".encode("utf-8")
+    ).hexdigest()
+    logger.info("Viewer authentication is ENABLED")
+else:
+    logger.info("Viewer authentication is DISABLED (no VIEWER_USERNAME / VIEWER_PASSWORD set)")
+
+
+def require_auth(auth_cookie: str | None = Cookie(default=None)):
+    """Dependency that enforces cookie-based viewer auth when enabled."""
+    if not AUTH_ENABLED:
+        return
+
+    if not auth_cookie or auth_cookie != AUTH_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
 # Setup paths
 templates_dir = Path(__file__).parent / "templates"
 
@@ -44,13 +69,60 @@ async def read_root():
     """Serve the main application page."""
     return FileResponse(templates_dir / "index.html")
 
-@app.get("/api/chats")
+@app.get("/api/auth/status")
+def auth_status(auth_cookie: str | None = Cookie(default=None)):
+    """
+    Return whether auth is required and if the current client is authenticated.
+    Used by the frontend to decide whether to show the login form.
+    """
+    if not AUTH_ENABLED:
+        return {"auth_required": False, "authenticated": True}
+
+    is_auth = bool(auth_cookie and auth_cookie == AUTH_TOKEN)
+    return {"auth_required": True, "authenticated": is_auth}
+
+
+@app.post("/api/login")
+def login(payload: dict, request: Request):
+    """Simple username/password login; sets an auth cookie on success."""
+    if not AUTH_ENABLED:
+        # If auth is disabled, always "succeed"
+        return JSONResponse({"success": True, "auth_required": False})
+
+    username = str(payload.get("username", ""))
+    password = str(payload.get("password", ""))
+
+    if username != VIEWER_USERNAME or password != VIEWER_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    response = JSONResponse({"success": True, "auth_required": True})
+    response.set_cookie(
+        AUTH_COOKIE_NAME,
+        AUTH_TOKEN,
+        httponly=True,
+        samesite="lax",
+    )
+    return response
+
+
+@app.post("/api/logout")
+def logout():
+    """Clear the auth cookie."""
+    if not AUTH_ENABLED:
+        return JSONResponse({"success": True})
+
+    response = JSONResponse({"success": True})
+    response.delete_cookie(AUTH_COOKIE_NAME)
+    return response
+
+
+@app.get("/api/chats", dependencies=[Depends(require_auth)])
 def get_chats():
     """Get all chats with metadata."""
     chats = db.get_all_chats()
     return chats
 
-@app.get("/api/chats/{chat_id}/messages")
+@app.get("/api/chats/{chat_id}/messages", dependencies=[Depends(require_auth)])
 def get_messages(
     chat_id: int,
     limit: int = 50,
@@ -92,7 +164,7 @@ def get_messages(
 
     return messages
 
-@app.get("/api/stats")
+@app.get("/api/stats", dependencies=[Depends(require_auth)])
 def get_stats():
     """Get backup statistics."""
     return db.get_statistics()
