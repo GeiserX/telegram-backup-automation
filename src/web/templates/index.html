@@ -92,14 +92,15 @@
     <div id="app" class="w-full h-full">
         <!-- Login Page -->
         <div v-if="!isAuthenticated" class="w-full h-full flex items-center justify-center">
-            <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-10 w-full max-w-md border border-white/20">
+            <div
+                class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-10 w-full max-w-md border border-white/20">
                 <!-- Telegram Logo -->
                 <div class="flex justify-center mb-6">
                     <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
                         <i class="fab fa-telegram-plane text-5xl text-blue-500"></i>
                     </div>
                 </div>
-                
+
                 <h1 class="text-3xl font-bold mb-2 text-center text-white">Telegram Archive</h1>
                 <p class="text-sm text-blue-100 mb-8 text-center" v-if="authRequired">
                     Sign in to access your backup
@@ -111,15 +112,18 @@
                 <form @submit.prevent="performLogin" class="space-y-5" v-if="authRequired">
                     <div>
                         <label class="block text-sm font-medium mb-2 text-blue-100">Username</label>
-                        <input v-model="loginForm.username" type="text" autocomplete="username" placeholder="Enter your username"
+                        <input v-model="loginForm.username" type="text" autocomplete="username"
+                            placeholder="Enter your username"
                             class="w-full bg-white/20 backdrop-blur-sm text-white placeholder-blue-200 rounded-xl px-4 py-3 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition">
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-2 text-blue-100">Password</label>
-                        <input v-model="loginForm.password" type="password" autocomplete="current-password" placeholder="Enter your password"
+                        <input v-model="loginForm.password" type="password" autocomplete="current-password"
+                            placeholder="Enter your password"
                             class="w-full bg-white/20 backdrop-blur-sm text-white placeholder-blue-200 rounded-xl px-4 py-3 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 transition">
                     </div>
-                    <p v-if="loginError" class="text-sm text-red-200 bg-red-500/20 rounded-lg p-2 text-center">{{ loginError }}</p>
+                    <p v-if="loginError" class="text-sm text-red-200 bg-red-500/20 rounded-lg p-2 text-center">{{
+                        loginError }}</p>
                     <button type="submit" :disabled="loadingAuth"
                         class="w-full bg-white text-blue-600 hover:bg-blue-50 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl py-3 font-semibold transition shadow-lg hover:shadow-xl">
                         {{ loadingAuth ? 'Signing in...' : 'Sign in' }}
@@ -132,113 +136,13 @@
         <div v-else class="flex w-full h-full bg-tg-bg">
             <!-- Sidebar -->
             <div class="w-1/4 min-w-[300px] bg-tg-sidebar flex flex-col border-r border-gray-700">
-            <!-- Header -->
-            <div class="p-4 border-b border-gray-700">
-                <h1 class="text-xl font-bold mb-4">Telegram Archive</h1>
-                <div class="relative">
-                    <input v-model="searchQuery" type="text" placeholder="Search chats..."
-                        class="w-full bg-gray-900 text-white rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </div>
-            </div>
-
-            <!-- Chat List -->
-            <div class="flex-1 overflow-y-auto">
-                <div v-for="chat in filteredChats" :key="chat.id" @click="selectChat(chat)"
-                    class="p-3 cursor-pointer hover:bg-tg-hover transition-colors flex items-center gap-3"
-                    :class="{'bg-tg-active': selectedChat?.id === chat.id}">
-                    <!-- Avatar -->
-                    <div
-                        class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-lg font-bold text-white shrink-0 overflow-hidden relative">
-                        <img v-if="chat.avatar_url" :src="chat.avatar_url" 
-                            class="w-full h-full object-cover"
-                            @error="chat.avatar_url = null"
-                            :alt="getChatName(chat)">
-                        <template v-else-if="isDeletedChat(chat)">
-                            <!-- Deleted account icon -->
-                            <svg class="w-7 h-7 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 14c2.21 0 4-1.343 4-3s-1.79-3-4-3-4 1.343-4 3 1.79 3 4 3z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 21a7 7 0 0114 0" />
-                            </svg>
-                        </template>
-                        <template v-else>
-                            {{ getInitials(chat) }}
-                        </template>
-                    </div>
-
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-baseline">
-                            <h3 class="font-semibold truncate text-white">
-                                {{ getChatName(chat) }}
-                            </h3>
-                            <span class="text-xs text-tg-muted">{{ formatDate(chat.last_message_date) }}</span>
-                        </div>
-                        <p class="text-sm text-tg-muted truncate">
-                            {{ chat.type }}
-                            <span v-if="chat.type !== 'private' && chat.participants_count">
-                                • {{ chat.participants_count }} participants
-                            </span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Chat Area -->
-        <div class="flex-1 flex flex-col bg-tg-bg relative">
-            <div v-if="!selectedChat" class="flex-1 flex items-center justify-center text-tg-muted flex-col">
-                <div class="bg-tg-sidebar p-6 rounded-full mb-4">
-                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
-                        </path>
-                    </svg>
-                </div>
-                <p>Select a chat to view history</p>
-            </div>
-
-            <template v-else>
-                <!-- Chat Header -->
-                <div
-                    class="p-4 bg-tg-sidebar border-b border-gray-700 flex items-center justify-between shadow-md z-10">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white overflow-hidden relative">
-                            <img v-if="selectedChat?.avatar_url" :src="selectedChat.avatar_url" 
-                                class="w-full h-full object-cover"
-                                @error="selectedChat.avatar_url = null"
-                                :alt="getChatName(selectedChat)">
-                            <template v-else-if="isDeletedChat(selectedChat)">
-                                <svg class="w-6 h-6 opacity-80" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 14c2.21 0 4-1.343 4-3s-1.79-3-4-3-4 1.343-4 3 1.79 3 4 3z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M5 21a7 7 0 0114 0" />
-                                </svg>
-                            </template>
-                            <template v-else>
-                                {{ getInitials(selectedChat) }}
-                            </template>
-                        </div>
-                        <div>
-                            <h2 class="font-bold text-lg">{{ getChatName(selectedChat) }}</h2>
-                            <p class="text-xs text-tg-muted">{{ selectedChat.type }}</p>
-                        </div>
-                    </div>
-
-                    <!-- Search Bar -->
-                    <div class="relative w-64">
-                        <input v-model="messageSearchQuery" @input="searchMessages" type="text"
-                            placeholder="Search in chat..."
-                            class="w-full bg-gray-900 text-white rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor"
+                <!-- Header -->
+                <div class="p-4 border-b border-gray-700">
+                    <h1 class="text-xl font-bold mb-4">Telegram Archive</h1>
+                    <div class="relative">
+                        <input v-model="searchQuery" type="text" placeholder="Search chats..."
+                            class="w-full bg-gray-900 text-white rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -246,104 +150,202 @@
                     </div>
                 </div>
 
-                <!-- Messages -->
-                <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-1" @scroll="handleScroll">
-                    <div v-if="loading && messages.length === 0" class="text-center py-4 text-tg-muted">
-                        Loading messages...
-                    </div>
-
-                    <template v-for="(msg, index) in sortedMessages" :key="msg.id">
-                        <!-- Date Separator -->
-                        <div v-if="showDateSeparator(index)" class="date-separator">
-                            <span>{{ formatDateFull(msg.date) }}</span>
+                <!-- Chat List -->
+                <div class="flex-1 overflow-y-auto">
+                    <div v-for="chat in filteredChats" :key="chat.id" @click="selectChat(chat)"
+                        class="p-3 cursor-pointer hover:bg-tg-hover transition-colors flex items-center gap-3"
+                        :class="{'bg-tg-active': selectedChat?.id === chat.id}">
+                        <!-- Avatar -->
+                        <div
+                            class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-lg font-bold text-white shrink-0 overflow-hidden relative">
+                            <img v-if="chat.avatar_url" :src="chat.avatar_url" class="w-full h-full object-cover"
+                                @error="chat.avatar_url = null" :alt="getChatName(chat)">
+                            <template v-else-if="isDeletedChat(chat)">
+                                <!-- Deleted account icon -->
+                                <svg class="w-7 h-7 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 14c2.21 0 4-1.343 4-3s-1.79-3-4-3-4 1.343-4 3 1.79 3 4 3z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 21a7 7 0 0114 0" />
+                                </svg>
+                            </template>
+                            <template v-else>
+                                {{ getInitials(chat) }}
+                            </template>
                         </div>
 
-                        <!-- Message -->
-                        <div class="flex" :class="isOwnMessage(msg) ? 'justify-end' : 'justify-start'">
-                            <div class="message-bubble p-3 text-sm shadow-sm text-gray-100"
-                                :style="getSenderStyle(msg)">
-                                <!-- Sender Name (if group and first in sequence) -->
-                                <div v-if="!isOwnMessage(msg) && isGroup && showSenderName(index)"
-                                    class="text-xs font-bold text-blue-400 mb-1">
-                                    {{ getSenderName(msg) }}
-                                </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline">
+                                <h3 class="font-semibold truncate text-white">
+                                    {{ getChatName(chat) }}
+                                </h3>
+                                <span class="text-xs text-tg-muted">{{ formatDate(chat.last_message_date) }}</span>
+                            </div>
+                            <p class="text-sm text-tg-muted truncate">
+                                {{ chat.type }}
+                                <span v-if="chat.type !== 'private' && chat.participants_count">
+                                    • {{ chat.participants_count }} participants
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                                <!-- Reply Context -->
-                                <div v-if="msg.reply_to_msg_id" @click="scrollToMessage(msg.reply_to_msg_id)"
-                                    class="border-l-2 border-blue-400/50 pl-2 mb-2 text-xs bg-black/20 rounded p-2 cursor-pointer hover:bg-black/30 transition">
-                                    <div class="font-semibold text-blue-400 mb-0.5">Reply to</div>
-                                    <div class="truncate opacity-70">{{ msg.reply_to_text || 'Message' }}</div>
-                                </div>
+            <!-- Main Chat Area -->
+            <div class="flex-1 flex flex-col bg-tg-bg relative">
+                <div v-if="!selectedChat" class="flex-1 flex items-center justify-center text-tg-muted flex-col">
+                    <div class="bg-tg-sidebar p-6 rounded-full mb-4">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                            </path>
+                        </svg>
+                    </div>
+                    <p>Select a chat to view history</p>
+                </div>
 
-                                <!-- Media -->
-                                <div v-if="msg.media_path" class="mb-2 space-y-1">
-                                    <!-- Photos sent as photos -->
-                                    <img v-if="msg.media_type === 'photo'" :src="getMediaUrl(msg)"
-                                        class="rounded-lg max-h-64 object-cover cursor-pointer hover:opacity-90 transition"
-                                        @click="openMedia(msg)" @error="handleImageError($event, msg)">
-
-                                    <!-- Videos -->
-                                    <video v-else-if="msg.media_type === 'video'" controls
-                                        class="rounded-lg max-h-64 w-full">
-                                        <source :src="getMediaUrl(msg)" type="video/mp4">
-                                    </video>
-
-                                    <!-- Documents that are actually images: show inline preview + filename -->
-                                    <div v-else-if="msg.media_type === 'document' && isImageDocument(msg)"
-                                        class="space-y-1">
-                                        <img :src="getMediaUrl(msg)"
-                                            class="rounded-lg max-h-48 object-cover cursor-pointer hover:opacity-90 transition"
-                                            @click="openMedia(msg)" @error="handleImageError($event, msg)">
-                                        <div class="flex items-center justify-between text-[11px] opacity-80">
-                                            <span class="truncate mr-2">{{ getDocumentDisplayName(msg) }}</span>
-                                            <a :href="getMediaUrl(msg)" download
-                                                class="text-blue-400 hover:text-blue-300 whitespace-nowrap">
-                                                Download
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    <!-- Other documents / files -->
-                                    <a v-else :href="getMediaUrl(msg)" download
-                                        class="flex items-center gap-2 bg-black/20 p-2 rounded hover:bg-black/30 transition">
-                                        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                            </path>
-                                        </svg>
-                                        <div class="flex flex-col text-xs">
-                                            <span class="font-medium truncate">
-                                                {{ getDocumentDisplayName(msg) }}
-                                            </span>
-                                            <span class="text-[10px] text-tg-muted" v-if="msg.media_type">
-                                                {{ msg.media_type }} file
-                                            </span>
-                                        </div>
-                                    </a>
-                                </div>
-
-                                <!-- Text with clickable links -->
-                                <div class="whitespace-pre-wrap break-words message-text"
-                                    v-html="linkifyText(msg.text)"></div>
-
-                                <!-- Metadata -->
-                                <div class="text-[10px] opacity-60 text-right mt-1 flex justify-end items-center gap-1">
-                                    <span v-if="msg.edit_date">edited</span>
-                                    {{ formatTime(msg.date) }}
-                                </div>
+                <template v-else>
+                    <!-- Chat Header -->
+                    <div
+                        class="p-4 bg-tg-sidebar border-b border-gray-700 flex items-center justify-between shadow-md z-10">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white overflow-hidden relative">
+                                <img v-if="selectedChat?.avatar_url" :src="selectedChat.avatar_url"
+                                    class="w-full h-full object-cover" @error="selectedChat.avatar_url = null"
+                                    :alt="getChatName(selectedChat)">
+                                <template v-else-if="isDeletedChat(selectedChat)">
+                                    <svg class="w-6 h-6 opacity-80" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 14c2.21 0 4-1.343 4-3s-1.79-3-4-3-4 1.343-4 3 1.79 3 4 3z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 21a7 7 0 0114 0" />
+                                    </svg>
+                                </template>
+                                <template v-else>
+                                    {{ getInitials(selectedChat) }}
+                                </template>
+                            </div>
+                            <div>
+                                <h2 class="font-bold text-lg">{{ getChatName(selectedChat) }}</h2>
+                                <p class="text-xs text-tg-muted">{{ selectedChat.type }}</p>
                             </div>
                         </div>
-                    </template>
 
-                    <div v-if="loading && messages.length > 0" class="text-center py-2 text-tg-muted text-sm">
-                        Loading more...
+                        <!-- Search Bar -->
+                        <div class="relative w-64">
+                            <input v-model="messageSearchQuery" @input="searchMessages" type="text"
+                                placeholder="Search in chat..."
+                                class="w-full bg-gray-900 text-white rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
                     </div>
 
-                    <div ref="scrollAnchor"></div>
-                </div>
-            </template>
-        </div>
+                    <!-- Messages -->
+                    <div ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-1" @scroll="handleScroll">
+                        <div v-if="loading && messages.length === 0" class="text-center py-4 text-tg-muted">
+                            Loading messages...
+                        </div>
+
+                        <template v-for="(msg, index) in sortedMessages" :key="msg.id">
+                            <!-- Date Separator -->
+                            <div v-if="showDateSeparator(index)" class="date-separator">
+                                <span>{{ formatDateFull(msg.date) }}</span>
+                            </div>
+
+                            <!-- Message -->
+                            <div class="flex" :class="isOwnMessage(msg) ? 'justify-end' : 'justify-start'">
+                                <div class="message-bubble p-3 text-sm shadow-sm text-gray-100"
+                                    :style="getSenderStyle(msg)">
+                                    <!-- Sender Name (if group and first in sequence) -->
+                                    <div v-if="!isOwnMessage(msg) && isGroup && showSenderName(index)"
+                                        class="text-xs font-bold text-blue-400 mb-1">
+                                        {{ getSenderName(msg) }}
+                                    </div>
+
+                                    <!-- Reply Context -->
+                                    <div v-if="msg.reply_to_msg_id" @click="scrollToMessage(msg.reply_to_msg_id)"
+                                        class="border-l-2 border-blue-400/50 pl-2 mb-2 text-xs bg-black/20 rounded p-2 cursor-pointer hover:bg-black/30 transition">
+                                        <div class="font-semibold text-blue-400 mb-0.5">Reply to</div>
+                                        <div class="truncate opacity-70">{{ msg.reply_to_text || 'Message' }}</div>
+                                    </div>
+
+                                    <!-- Media -->
+                                    <div v-if="msg.media_path" class="mb-2 space-y-1">
+                                        <!-- Photos sent as photos -->
+                                        <img v-if="msg.media_type === 'photo'" :src="getMediaUrl(msg)"
+                                            class="rounded-lg max-h-64 object-cover cursor-pointer hover:opacity-90 transition"
+                                            @click="openMedia(msg)" @error="handleImageError($event, msg)">
+
+                                        <!-- Videos -->
+                                        <video v-else-if="msg.media_type === 'video'" controls
+                                            class="rounded-lg max-h-64 w-full">
+                                            <source :src="getMediaUrl(msg)" type="video/mp4">
+                                        </video>
+
+                                        <!-- Documents that are actually images: show inline preview + filename -->
+                                        <div v-else-if="msg.media_type === 'document' && isImageDocument(msg)"
+                                            class="space-y-1">
+                                            <img :src="getMediaUrl(msg)"
+                                                class="rounded-lg max-h-48 object-cover cursor-pointer hover:opacity-90 transition"
+                                                @click="openMedia(msg)" @error="handleImageError($event, msg)">
+                                            <div class="flex items-center justify-between text-[11px] opacity-80">
+                                                <span class="truncate mr-2">{{ getDocumentDisplayName(msg) }}</span>
+                                                <a :href="getMediaUrl(msg)" download
+                                                    class="text-blue-400 hover:text-blue-300 whitespace-nowrap">
+                                                    Download
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Other documents / files -->
+                                        <a v-else :href="getMediaUrl(msg)" download
+                                            class="flex items-center gap-2 bg-black/20 p-2 rounded hover:bg-black/30 transition">
+                                            <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                                </path>
+                                            </svg>
+                                            <div class="flex flex-col text-xs">
+                                                <span class="font-medium truncate">
+                                                    {{ getDocumentDisplayName(msg) }}
+                                                </span>
+                                                <span class="text-[10px] text-tg-muted" v-if="msg.media_type">
+                                                    {{ msg.media_type }} file
+                                                </span>
+                                            </div>
+                                        </a>
+                                    </div>
+
+                                    <!-- Text with clickable links -->
+                                    <div class="whitespace-pre-wrap break-words message-text"
+                                        v-html="linkifyText(msg.text)"></div>
+
+                                    <!-- Metadata -->
+                                    <div
+                                        class="text-[10px] opacity-60 text-right mt-1 flex justify-end items-center gap-1">
+                                        <span v-if="msg.edit_date">edited</span>
+                                        {{ formatTime(msg.date) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <div v-if="loading && messages.length > 0" class="text-center py-2 text-tg-muted text-sm">
+                            Loading more...
+                        </div>
+
+                        <div ref="scrollAnchor"></div>
+                    </div>
+                </template>
+            </div>
         </div>
     </div>
 
@@ -599,9 +601,28 @@
                 const getSenderColor = (msg) => {
                     // Use sender_id when available, otherwise fall back to chat_id
                     const id = msg.sender_id ?? msg.chat_id ?? 0
-                    const base = Math.abs(id) || 1
-                    const hue = (base * 47) % 360
-                    return `hsla(${hue}, 45%, 22%, 0.95)`
+
+                    // Simple hash function for better color distribution
+                    let hash = 0
+                    const idStr = String(id)
+                    for (let i = 0; i < idStr.length; i++) {
+                        hash = ((hash << 5) - hash) + idStr.charCodeAt(i)
+                        hash = hash & hash // Convert to 32-bit integer
+                    }
+
+                    // Generate hue from hash for diverse colors
+                    const hue = Math.abs(hash) % 360
+
+                    // Check if this is own message
+                    const isOwn = isOwnMessage(msg)
+
+                    // Own messages: darker, more opaque (lower lightness, higher alpha)
+                    // Others: lighter, softer (higher lightness, lower alpha)
+                    const saturation = isOwn ? 50 : 40
+                    const lightness = isOwn ? 25 : 30
+                    const alpha = isOwn ? 0.95 : 0.85
+
+                    return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha})`
                 }
 
                 const getSenderStyle = (msg) => {

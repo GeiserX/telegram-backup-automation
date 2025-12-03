@@ -117,7 +117,7 @@ class TelegramBackup:
                 logger.info(f"Deleting {len(explicitly_excluded_chat_ids)} explicitly excluded chats from database...")
                 for chat_id in explicitly_excluded_chat_ids:
                     try:
-                        self.db.delete_chat_and_related_data(chat_id)
+                        self.db.delete_chat_and_related_data(chat_id, self.config.media_path)
                     except Exception as e:
                         logger.error(f"Error deleting chat {chat_id}: {e}", exc_info=True)
 

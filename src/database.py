@@ -6,6 +6,9 @@ Manages SQLite database schema and CRUD operations for messages, chats, and medi
 import sqlite3
 import logging
 import json
+import os
+import shutil
+import glob
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Tuple
 from pathlib import Path
@@ -426,18 +429,21 @@ class Database:
         ''')
         return [dict(row) for row in cursor.fetchall()]
     
-    def delete_chat_and_related_data(self, chat_id: int):
+    def delete_chat_and_related_data(self, chat_id: int, media_base_path: str = None):
         """
-        Delete a chat and all related data from the database.
+        Delete a chat and all related data from the database AND filesystem.
         
         This includes:
         - Chat record
         - All messages in the chat
         - All media references for messages in the chat
         - Sync status for the chat
+        - Physical media folder (data/media/{chat_id}/)
+        - Avatar files for this chat
         
         Args:
             chat_id: Chat ID to delete
+            media_base_path: Base path to media directory (e.g., 'data/media')
         """
         cursor = self.conn.cursor()
         
@@ -467,6 +473,29 @@ class Database:
         
         self.conn.commit()
         logger.info(f"Deleted chat {chat_id} and all related data from database")
+        
+        # Delete physical media files if media_base_path is provided
+        if media_base_path and os.path.exists(media_base_path):
+            # Delete chat media folder
+            chat_media_dir = os.path.join(media_base_path, str(chat_id))
+            if os.path.exists(chat_media_dir):
+                try:
+                    shutil.rmtree(chat_media_dir)
+                    logger.info(f"Deleted media folder: {chat_media_dir}")
+                except Exception as e:
+                    logger.error(f"Failed to delete media folder {chat_media_dir}: {e}")
+            
+            # Delete avatar files for this chat
+            # Avatars are stored as: avatars/chats/{chat_id}_*.jpg or avatars/users/{chat_id}_*.jpg
+            for avatar_type in ['chats', 'users']:
+                avatar_pattern = os.path.join(media_base_path, 'avatars', avatar_type, f'{chat_id}_*.jpg')
+                avatar_files = glob.glob(avatar_pattern)
+                for avatar_file in avatar_files:
+                    try:
+                        os.remove(avatar_file)
+                        logger.info(f"Deleted avatar file: {avatar_file}")
+                    except Exception as e:
+                        logger.error(f"Failed to delete avatar {avatar_file}: {e}")
     
     def close(self):
         """Close database connection."""
