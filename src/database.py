@@ -79,6 +79,7 @@ class Database:
                 media_path TEXT,
                 raw_data TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_outgoing INTEGER DEFAULT 0,
                 PRIMARY KEY (id, chat_id),
                 FOREIGN KEY (chat_id) REFERENCES chats(id)
             )
