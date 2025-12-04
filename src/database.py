@@ -102,29 +102,31 @@ class Database:
         # Media table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS media (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                chat_id INTEGER,
+                id TEXT PRIMARY KEY,
                 message_id INTEGER,
-                file_id TEXT,
-                file_unique_id TEXT,
+                chat_id INTEGER,
+                type TEXT,
+                file_path TEXT,
                 file_name TEXT,
                 file_size INTEGER,
                 mime_type TEXT,
-                file_path TEXT,
+                width INTEGER,
+                height INTEGER,
+                duration INTEGER,
                 downloaded INTEGER DEFAULT 0,
+                download_date TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (chat_id) REFERENCES chats(id),
-                FOREIGN KEY (message_id) REFERENCES messages(id)
+                FOREIGN KEY (message_id, chat_id) REFERENCES messages(id, chat_id)
             )
         ''')
-        
+
         # Sync status table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS sync_status (
                 chat_id INTEGER PRIMARY KEY,
                 last_message_id INTEGER DEFAULT 0,
                 last_sync_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                messages_count INTEGER DEFAULT 0,
+                message_count INTEGER DEFAULT 0,
                 FOREIGN KEY (chat_id) REFERENCES chats(id)
             )
         ''')
